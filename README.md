@@ -1,20 +1,21 @@
 ## Switch Audio sysmodule stuff
 
-This repo contains structs and IDA dbs (IDA 7.6+) for the Switch audio sysmodule. It's FAR from complete and quite messy, some things may be wrong etc etc, so take it all with a grain of salt. This was the stuff I used to write the audio impl in Yuzu.
+This repo contains structs and IDA DBs (IDA 7.6+) for the Switch audio sysmodule. It's FAR from complete and quite messy, some things may be wrong etc etc, so take it all with a grain of salt. This was the stuff I used to write the audio impl in Yuzu.
 
-audio_xx.x.x are the firmware sysmodules with that respective version.
-dsp_xx.x.x are for the ADSP binary stored within the sysmodule.
+audio_xx.x.x are the firmware sysmodules with that respective version. \
+dsp_xx.x.x are for the ADSP binary stored within the sysmodule. \
 sdk.rar contains the SDK DBs for their given versions, these are what I used as a base to help fill out the sysmodule symbols and structs.
 
 I did all the work on the 13.2.1 versions, so those are the most complete, for 14 I just import the 13.2.1 and check the differences, so it's less complete than 13 and some of the bindiff checked symbols are wrong. Use the 13 versions unless you need something explicitly from 14.
 
 ### ADSP
 
-There's a 32-bit binary stored within the audio sysmodule which is launched at startup. This binary is the adsp which comes from nVidia's L4T (Linux4Tegra) packages. It hosts various apps which developers can write for it, and they communicate with the main sysmodule via mailboxes. I've included the base adsp in the adsp folder. **It doesn't contain any Nintendo code, it's just the base elf from nVidia**, it includes symbols and structs which can be used as a reference, since the adsp inside the sysmodule is stripped.
+There's a 32-bit binary stored within the audio sysmodule which is launched at startup. This binary is the adsp which comes from nVidia's L4T (Linux4Tegra) packages. It hosts various apps which developers can write for it, and they communicate with the main sysmodule via mailboxes. I've included the base adsp in the adsp folder. \
+**It doesn't contain any Nintendo code, it's just the base elf from nVidia**, it includes symbols and structs which can be used as a reference, since the adsp inside the sysmodule is stripped.
 
-Here's a couple ways too get the ADSP in a sysmodule without symbols (In my DBs it's inside the DoFirmwareLoadImpl function):
+Here's a couple ways to get the ADSP in a sysmodule without symbols (In my DBs it's inside the DoFirmwareLoadImpl function):
  - Look at the segments list and it should be the 5th one (after .rodata)
- - Search for 0xC0C99, which error is thrown when the adsp fails to launch, so just scroll up from that and the function call to launch the ADSP should be right above it. The call takes the start/end pointers of the ADSP code, so you can dump it from there.
+ - Search for 0xC0C99, which is the error thrown when the adsp fails to launch, so just scroll up from that and the function call to launch the ADSP should be right above it. The call takes the start/end pointers of the ADSP code, so you can dump it from there.
 
 
  The ADSP itself has a function which sets up and prints the segments (platform_remap_mappings) so you can search for 0x80300000 or search for "text" and you'll find the function even without symbols. So you can then add those segments to the ADSP in IDA if you want.
@@ -33,8 +34,10 @@ The structs folder contains all the structs I've created in a few big C headers.
 You can use these structs alone without needing the IDA DBs, although when first importing there may be some errors with missing symbols etc because of the order everything is laid out in the header. Try using ctrl+f9 a couple times in a row, if the number of errors don't go down, then check the output, you'll probably just need to throw the `struct` keyword on some struct members which use structs that are defined below them. Everything is there though.
 My DBs do contain some outdated structs since I changed struct names and stuff while working on the RE, e.g `nn::audio::dsp::ReverbCommand` vs `nn::audio::ReverbCommand` where the second one is the current and most updated one, as it's currently named in audio.h. Be careful of that kind of thing.
 
-Some structs have firmware/sdk versions when they differ. DelayLine and DelayLineSdk for example, make sure you use the Sdk one for the SDK, and the other for firmware. AudioRenderSystem is one I named like an idiot, where AudioRenderSystem is for the SDK, and AudioRenderSystemS is for firmware. I started working via SDK first, and then when I came to add the firmware version I just added an "S" for SDK even though it's the toher way around. It was dumb but whatever, I commented which is which in the header file.
+Some structs have firmware/sdk versions when they differ. DelayLine and DelayLineSdk for example, make sure you use the Sdk one for the SDK, and the other for firmware. AudioRenderSystem is one I named like an idiot, where AudioRenderSystem is for the SDK, and AudioRenderSystemS is for firmware. I started working via SDK first, and then when I came to add the firmware version I just added an "S" for SDK even though it's for the firmware version, So structs just ending in "S" are firmware and not Sdk. It was dumb but whatever, I commented which is which in the header file.
 
 The structs are updated to firmware 15 currently, so using them directly on firmware 13 for example will be wrong and give you some wrong struct sizes. Unfortunately I didn't keep older firmware versions as separate headers as I should have, but those versions are still available via the DBs so you can dump them from there.
+
+The nn structs were taken from https://github.com/misson20000/nn-types and modified a little bit.
 
 If you have any questions or stuff doesn't work then you can message me on Discord, Maide on Yuzu's server.
